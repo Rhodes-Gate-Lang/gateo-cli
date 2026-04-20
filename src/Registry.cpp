@@ -5,14 +5,14 @@
 
 #include "Registry.hpp"
 
-#include "sim/command/Simulator.hpp"
+#include "sim/Simulator.hpp"
 
 #include <algorithm>
 #include <iostream>
 #include <utility>
 
 Registry::Registry() {
-  registry_.emplace("sim", std::make_unique<gate_cli::sim::command::Simulator>());
+  registry_.emplace("sim", std::make_unique<gate_cli::sim::Simulator>());
 }
 
 void Registry::print_help() {

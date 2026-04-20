@@ -26,9 +26,8 @@ FetchContent_MakeAvailable(gateo-cpp)
 
 add_library(gate_cli STATIC
   src/Registry.cpp
-  src/sim/adapter/Adapter.cpp
-  src/sim/command/Simulator.cpp
-  src/sim/engine/Engine.cpp
+  src/sim/Evaluation.cpp
+  src/sim/Simulator.cpp
 )
 
 target_include_directories(gate_cli
