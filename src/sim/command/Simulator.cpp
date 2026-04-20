@@ -1,20 +1,26 @@
 /**
  * File: Simulator.cpp
- * Purpose: Simulator command — load .gateo via gateo-cpp
  */
 
-#include "sim/Simulator.hpp"
+#include "sim/command/Simulator.hpp"
+
+#include "sim/adapter/Adapter.hpp"
+#include "sim/engine/Engine.hpp"
 
 #include "gateo/io.hpp"
 
 #include <filesystem>
 #include <iostream>
 
-using gateo::v2::view::GateObject;
+namespace gate_cli::sim::command {
 
-GateObject Simulator::pathToGateObject(const std::string& path) {
+namespace {
+
+gateo::v2::view::GateObject path_to_gate_object(const std::string& path) {
   return gateo::read_file(std::filesystem::path(path));
 }
+
+}  // namespace
 
 void Simulator::run(std::vector<std::string> args) {
   if (args.empty()) {
@@ -22,9 +28,14 @@ void Simulator::run(std::vector<std::string> args) {
     return;
   }
   try {
-    const GateObject obj = pathToGateObject(args[0]);
+    const gateo::v2::view::GateObject obj = path_to_gate_object(args[0]);
     std::cout << "sim: loaded \"" << args[0] << "\" — " << obj.components.size()
               << " component(s), " << obj.nodes.size() << " node(s)\n";
+
+    gate_cli::sim::SimObject sim = gate_cli::sim::adapter::adapt(obj);
+    std::cout << "sim: lowered graph — " << sim.nodes.size() << " sim node(s)\n";
+
+    gate_cli::sim::engine::eval(sim);
   } catch (const std::exception& e) {
     std::cerr << "sim: " << e.what() << "\n";
   }
@@ -35,3 +46,5 @@ CommandInfo Simulator::get_info() {
                      "Load a .gateo design file (gateo.v2) for inspection or simulation",
                      "gate sim <file.gateo>"};
 }
+
+}  // namespace gate_cli::sim::command

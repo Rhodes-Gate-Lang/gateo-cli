@@ -1,6 +1,6 @@
 /**
  * File: Simulator.hpp
- * Purpose: Create the Simulator command class
+ * Purpose: `gate sim` command — load .gateo, adapt, run engine.
  */
 #pragma once
 
@@ -8,13 +8,13 @@
 #include <vector>
 
 #include "Command.hpp"
-#include "gateo/v2/view.hpp"
+
+namespace gate_cli::sim::command {
 
 class Simulator : public Command {
-private:
-  gateo::v2::view::GateObject pathToGateObject(const std::string& path);
-
 public:
   void run(std::vector<std::string> args) override;
   CommandInfo get_info() override;
 };
+
+}  // namespace gate_cli::sim::command
