@@ -25,13 +25,16 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(gateo-cpp)
 
 add_library(gate_cli STATIC
-  src/cli/GateCli.cpp
+  src/Registry.cpp
+  src/sim/Simulator.cpp
 )
 
 target_include_directories(gate_cli
   PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
+
+target_link_libraries(gate_cli PUBLIC gateo::gateo)
 
 add_executable(gate-lang-cli src/cli/GateCli.cpp)
 set_target_properties(gate-lang-cli PROPERTIES
