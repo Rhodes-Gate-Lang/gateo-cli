@@ -6,8 +6,21 @@ namespace gate_cli::sim {
 
 using gateo::v2::view::Node;
 
+namespace {
+
+std::uint64_t mask_width(std::uint32_t width) {
+  if (width == 0)
+    return 0;
+  if (width >= 64)
+    return ~std::uint64_t{0};
+  return (std::uint64_t{1} << width) - 1;
+}
+
+}  // namespace
+
 uint64_t value_of(const Node& node) {
-  return node.literal_value.value_or(0);
+  const std::uint64_t v = node.literal_value.value_or(0);
+  return v & mask_width(node.width);
 }
 
 void eval(gateo::v2::view::GateObject& obj) {
@@ -20,7 +33,12 @@ void eval(gateo::v2::view::GateObject& obj) {
         break;
 
       case GateType::Input:
-        break; // Do nothing
+        // Root inputs keep CLI-bound literal_value. Instance input ports have
+        // `inputs[0]` pointing at the driving net in the parent scope.
+        if (!node.inputs.empty()) {
+          node.literal_value = value_of(obj.nodes[node.inputs.at(0)]);
+        }
+        break;
 
       case GateType::Literal:
         break; // Value is already set
@@ -38,26 +56,29 @@ void eval(gateo::v2::view::GateObject& obj) {
       }
 
       case GateType::And: {
-        node.literal_value = ~0ULL;
-        for (uint32_t idx : node.inputs)
-          node.literal_value &= value_of(obj.nodes[idx]);
-
+        std::uint64_t acc = ~0ULL;
+        for (std::uint32_t idx : node.inputs) {
+          acc &= value_of(obj.nodes[idx]);
+        }
+        node.literal_value = acc;
         break;
       }
 
       case GateType::Or: {
-        node.literal_value = 0;
-        for (uint32_t idx : node.inputs)
-          node.literal_value |= value_of(obj.nodes[idx]);
-
+        std::uint64_t acc = 0;
+        for (std::uint32_t idx : node.inputs) {
+          acc |= value_of(obj.nodes[idx]);
+        }
+        node.literal_value = acc;
         break;
       }
 
       case GateType::Xor: {
-        node.literal_value = 0;
-        for (uint32_t idx : node.inputs)
-          node.literal_value ^= value_of(obj.nodes[idx]);
-
+        std::uint64_t acc = 0;
+        for (std::uint32_t idx : node.inputs) {
+          acc ^= value_of(obj.nodes[idx]);
+        }
+        node.literal_value = acc;
         break;
       }
     }

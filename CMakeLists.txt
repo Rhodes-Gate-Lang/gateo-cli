@@ -24,9 +24,19 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(gateo-cpp)
 
+# CLI11: header-only argument parser with first-class subcommand support.
+# Docs: https://cliutils.github.io/CLI11/book/
+FetchContent_Declare(
+  cli11
+  GIT_REPOSITORY https://github.com/CLIUtils/CLI11.git
+  GIT_TAG        v2.6.2
+)
+FetchContent_MakeAvailable(cli11)
+
 add_library(gate_cli STATIC
-  src/Registry.cpp
   src/sim/Evaluation.cpp
+  src/sim/NumberFormatter.cpp
+  src/sim/SimConfig.cpp
   src/sim/Simulator.cpp
 )
 
@@ -35,7 +45,11 @@ target_include_directories(gate_cli
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-target_link_libraries(gate_cli PUBLIC gateo::gateo)
+target_link_libraries(gate_cli
+  PUBLIC
+    gateo::gateo
+    CLI11::CLI11
+)
 
 add_executable(gate-lang-cli src/cli/GateCli.cpp)
 set_target_properties(gate-lang-cli PROPERTIES
