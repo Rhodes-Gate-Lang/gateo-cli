@@ -34,8 +34,10 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(cli11)
 
 add_library(gate_cli STATIC
+  src/NumberFormatter.cpp
+  src/codegen/Codegen.cpp
+  src/codegen/CodegenConfig.cpp
   src/sim/Evaluation.cpp
-  src/sim/NumberFormatter.cpp
   src/sim/SimConfig.cpp
   src/sim/Simulator.cpp
 )

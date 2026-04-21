@@ -7,8 +7,11 @@
  *   2. Include its header below.
  *   3. Call register_fmt(app) alongside the other register_* calls.
  *   4. Add the new .cpp file to gate_cli in CMakeLists.txt.
+ *
+ * Commands: sim, codegen, …
  */
 
+#include "codegen/Codegen.hpp"
 #include "sim/Simulator.hpp"
 
 #include <CLI/CLI.hpp>
@@ -24,6 +27,7 @@ int main(int argc, char** argv) {
   app.set_help_all_flag("--help-all", "Show help for all subcommands");
 
   // ── Register subcommands ──────────────────────────────────────────────────
+  gate_cli::codegen::register_codegen(app);
   gate_cli::sim::register_sim(app);
 
   // app.parse() is split out here (rather than using the CLI11_PARSE macro)
