@@ -368,6 +368,11 @@ void compile(
     }
 
     log << "codegen: binary: " << binary << "\n";
+
+    // Remove the runtime source files now that the binary has been produced;
+    // they are embedded in the `gate` binary and regenerated on every run.
+    std::filesystem::remove(output_dir / "gate_rt.h");
+    std::filesystem::remove(output_dir / "gate_rt.c");
 }
 
 }  // namespace
