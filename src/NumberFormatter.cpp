@@ -1,11 +1,11 @@
-#include "sim/NumberFormatter.hpp"
+#include "NumberFormatter.hpp"
 
 #include <cctype>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
-namespace gate_cli::sim {
+namespace gate_cli {
 
 namespace {
 
@@ -107,9 +107,8 @@ std::uint64_t to_word(std::string_view str_num, std::uint32_t width, std::ostrea
   const std::uint64_t mask = mask_width(width);
   const std::uint64_t clipped = raw & mask;
 
-  // Warn if it has to trunctate to fit width
   if (clipped != raw && warn != nullptr)
-    *warn << "sim: value truncates to " << width << " bits\n";
+    *warn << "value truncates to " << width << " bits\n";
 
   return clipped;
 }
@@ -145,4 +144,4 @@ std::string word_to_format(std::uint64_t word, NumberFormat format, std::uint32_
   }
 }
 
-}  // namespace gate_cli::sim
+}  // namespace gate_cli

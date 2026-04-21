@@ -1,6 +1,7 @@
 /**
  * File: NumberFormatter.hpp
- * Purpose: Convert between CLI number strings and uint64 words for simulation nodes.
+ * Purpose: Convert between CLI number strings and uint64 words (shared by sim,
+ *          codegen, and other commands).
  */
 
 #pragma once
@@ -10,7 +11,7 @@
 #include <string>
 #include <string_view>
 
-namespace gate_cli::sim {
+namespace gate_cli {
 
 enum class NumberFormat { Binary, Dec, Hex };
 
@@ -21,4 +22,4 @@ std::uint64_t to_word(std::string_view str_num, std::uint32_t width, std::ostrea
 /// Formats a word for display; binary is zero-padded to `width` bits (width 0 → minimal).
 std::string word_to_format(std::uint64_t word, NumberFormat format, std::uint32_t width = 64);
 
-}  // namespace gate_cli::sim
+}  // namespace gate_cli

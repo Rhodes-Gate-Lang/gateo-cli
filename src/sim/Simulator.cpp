@@ -24,13 +24,13 @@ static const std::map<std::string, InputSource> k_input_source_map{
     {"cli", InputSource::Cli},
 };
 
-static const std::map<std::string, NumberFormat> k_number_format_map{
-    {"binary",  NumberFormat::Binary},
-    {"bin",     NumberFormat::Binary},
-    {"dec",     NumberFormat::Dec},
-    {"decimal", NumberFormat::Dec},
-    {"int",     NumberFormat::Dec},
-    {"hex",     NumberFormat::Hex},
+static const std::map<std::string, gate_cli::NumberFormat> k_number_format_map{
+    {"binary",  gate_cli::NumberFormat::Binary},
+    {"bin",     gate_cli::NumberFormat::Binary},
+    {"dec",     gate_cli::NumberFormat::Dec},
+    {"decimal", gate_cli::NumberFormat::Dec},
+    {"int",     gate_cli::NumberFormat::Dec},
+    {"hex",     gate_cli::NumberFormat::Hex},
 };
 
 // ── register_sim ──────────────────────────────────────────────────────────────

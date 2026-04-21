@@ -9,8 +9,8 @@
 
 #pragma once
 
+#include "NumberFormatter.hpp"
 #include "gateo/v2/view.hpp"
-#include "sim/NumberFormatter.hpp"
 
 #include <ostream>
 #include <string>
@@ -24,7 +24,7 @@ struct SimConfig {
   // ── Options bound by CLI11 during argument parsing ──────────────────────────
 
   InputSource input_source{InputSource::Cli};
-  NumberFormat output_format{NumberFormat::Hex};
+  gate_cli::NumberFormat output_format{gate_cli::NumberFormat::Hex};
 
   /// Filesystem path to the `.gateo` file supplied as a positional argument.
   std::string gateo_path;
