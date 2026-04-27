@@ -2,7 +2,7 @@
 
 #include "RuntimeEmbed.hpp"
 #include "codegen/CodegenConfig.hpp"
-#include "gateo/v2/view.hpp"
+#include "gateo/v3/view.hpp"
 
 #include <CLI/CLI.hpp>
 #include <filesystem>
@@ -70,29 +70,60 @@ std::string hex64(std::uint64_t v) {
 }
 
 // Returns a human-readable type name for inline comments.
-const char* gate_type_label(gateo::v2::view::GateType t) {
-    using gateo::v2::view::GateType;
+const char* gate_type_label(gateo::v3::view::GateType t) {
+    using gateo::v3::view::GateType;
     switch (t) {
-        case GateType::Input:    return "Input";
-        case GateType::Output:   return "Output";
-        case GateType::And:      return "And";
-        case GateType::Or:       return "Or";
-        case GateType::Xor:      return "Xor";
-        case GateType::Not:      return "Not";
-        case GateType::Literal:  return "Literal";
-        default:                 return "Unknown";
+        case GateType::Unspecified: return "Unspecified";
+        case GateType::Input:       return "Input";
+        case GateType::Output:      return "Output";
+        case GateType::And:         return "And";
+        case GateType::Or:          return "Or";
+        case GateType::Xor:         return "Xor";
+        case GateType::Not:         return "Not";
+        case GateType::Literal:     return "Literal";
+        case GateType::Split:       return "Split";
+        case GateType::Merge:       return "Merge";
+        case GateType::Lsl:         return "Lsl";
+        case GateType::Lsr:         return "Lsr";
+        default:                    return "Unknown";
     }
 }
 
 // Builds the trailing comment for a node variable declaration:
 //   "TypeName [width]"  or  "TypeName \"name\" [width]"
-std::string node_comment(const gateo::v2::view::Node& n) {
+std::string node_comment(const gateo::v3::view::Node& n) {
     std::string s = gate_type_label(n.type);
     if (n.name.has_value() && !n.name->empty()) {
         s += " \"" + *n.name + "\"";
     }
     s += " [" + std::to_string(n.width) + "]";
     return s;
+}
+
+// `emit_design_c` only lowers the gate kinds the embedded C runtime supports today.
+// v3 adds SPLIT / MERGE / LSL / LSR; reject those (and UNSPECIFIED) up front so we
+// never emit a half-written design file.
+void throw_if_design_uses_unsupported_codegen_ops(
+    const gateo::v3::view::GateObject& obj)
+{
+    using gateo::v3::view::GateType;
+    for (const auto& n : obj.nodes) {
+        switch (n.type) {
+            case GateType::Input:
+            case GateType::Output:
+            case GateType::And:
+            case GateType::Or:
+            case GateType::Xor:
+            case GateType::Not:
+            case GateType::Literal:
+                break;
+            default:
+                throw std::runtime_error(
+                    std::string("gate codegen: node kind \"") + gate_type_label(n.type) +
+                    "\" is not lowered yet (v3 bus/shift ops are sim-only for now); "
+                    "use a design with only bitwise gates and literals, or use `gate sim`.");
+        }
+    }
 }
 
 // ── Design emitter ────────────────────────────────────────────────────────────
@@ -113,12 +144,14 @@ std::string node_comment(const gateo::v2::view::Node& n) {
 // in Evaluation.cpp (masks at read time).  Not nodes in particular require the
 // mask to prevent the bitwise complement from setting bits above the width.
 void emit_design_c(
-    const gateo::v2::view::GateObject& obj,
+    const gateo::v3::view::GateObject& obj,
     gate_cli::NumberFormat             default_fmt,
     std::string_view                   stem,
     std::ostream&                      out)
 {
-    using gateo::v2::view::GateType;
+    throw_if_design_uses_unsupported_codegen_ops(obj);
+
+    using gateo::v3::view::GateType;
     const auto& nodes = obj.nodes;
 
     // ── Pass 1: identify root inputs / outputs and assign each a slot ────────
@@ -232,7 +265,7 @@ void emit_design_c(
             }
 
             case GateType::Literal: {
-                const std::uint64_t val = n.literal_value.value_or(0) & mask;
+                const std::uint64_t val = n.value.value_or(0) & mask;
                 out << hex64(val);
                 break;
             }

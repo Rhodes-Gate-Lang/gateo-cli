@@ -9,7 +9,7 @@
 #pragma once
 
 #include "NumberFormatter.hpp"
-#include "gateo/v2/view.hpp"
+#include "gateo/v3/view.hpp"
 
 #include <string>
 
@@ -32,7 +32,7 @@ struct CodegenConfig {
 
   // ── Post-parse state ───────────────────────────────────────────────────────
 
-  gateo::v2::view::GateObject gate_object{};
+  gateo::v3::view::GateObject gate_object{};
 
   /// Deserializes gateo_path into gate_object. Call after CLI11 has parsed.
   void load_object();
