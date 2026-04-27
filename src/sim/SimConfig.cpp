@@ -62,7 +62,7 @@ void SimConfig::apply_inputs(std::ostream& warn) {
     }
 
     auto& node = gate_object.nodes[it->second];
-    node.literal_value = gate_cli::to_word(value, node.width, &warn);
+    node.value = gate_cli::to_word(value, node.width, &warn);
   }
 
   // Ensure every named root input received a value.
@@ -81,7 +81,7 @@ void SimConfig::print_outputs(std::ostream& out) const {
       continue;
     }
 
-    const std::uint64_t value = node.literal_value.value_or(0);
+    const std::uint64_t value = node.value.value_or(0);
     const std::string formatted =
         gate_cli::word_to_format(value, output_format, node.width);
     out << *node.name << " [" << node.width << "]: " << formatted << "\n";
