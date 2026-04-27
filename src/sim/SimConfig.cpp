@@ -19,7 +19,7 @@ void SimConfig::apply_inputs(std::ostream& warn) {
     throw std::logic_error("apply_inputs: only CLI input source is supported");
   }
 
-  using gateo::v2::view::GateType;
+  using gateo::v3::view::GateType;
 
   // Index every named root Input node so we can look up assignments by name.
   std::unordered_map<std::string, std::uint32_t> root_input_index;
@@ -74,7 +74,7 @@ void SimConfig::apply_inputs(std::ostream& warn) {
 }
 
 void SimConfig::print_outputs(std::ostream& out) const {
-  using gateo::v2::view::GateType;
+  using gateo::v3::view::GateType;
 
   for (const auto& node : gate_object.nodes) {
     if (node.type != GateType::Output || node.parent != 0 || !node.name.has_value()) {

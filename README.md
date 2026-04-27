@@ -1,6 +1,6 @@
 # gateo-cli
 
-Command-line tool for working with compiled Gate-Lang `.gateo` artifacts (gateo.v2 wire format).
+Command-line tool for working with compiled Gate-Lang `.gateo` artifacts (gateo.v3 wire format).
 
 ## Architecture
 
@@ -12,7 +12,7 @@ Command-line tool for working with compiled Gate-Lang `.gateo` artifacts (gateo.
 
 ## Dependency: gateo-cpp
 
-This repo does **not** vendor the parser/runtime by hand. [gateo-cpp](https://github.com/Rhodes-Gate-Lang/gateo-cpp) is pulled in at configure time via CMake `FetchContent` (pinned tag in `CMakeLists.txt`). The static library `gateo::gateo` provides I/O and the native view type `gateo::v2::view::GateObject` (e.g. `gateo::read_file` for `.gateo` files). Commands such as `sim` link against `gate_cli`, which links `gateo::gateo` publicly so protobuf and generated code resolve for the final `gate` binary.
+This repo does **not** vendor the parser/runtime by hand. [gateo-cpp](https://github.com/Rhodes-Gate-Lang/gateo-cpp) is pulled in at configure time via CMake `FetchContent` (pinned tag in `CMakeLists.txt`). The static library `gateo::gateo` provides I/O and the native view type `gateo::v3::view::GateObject` (e.g. `gateo::read_file` for `.gateo` files). Commands such as `sim` link against `gate_cli`, which links `gateo::gateo` publicly so protobuf and generated code resolve for the final `gate` binary.
 
 ## Build
 

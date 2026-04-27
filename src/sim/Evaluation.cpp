@@ -4,7 +4,7 @@
 
 namespace gate_cli::sim {
 
-using gateo::v2::view::Node;
+using gateo::v3::view::Node;
 
 namespace {
 
@@ -23,8 +23,8 @@ uint64_t value_of(const Node& node) {
   return v & mask_width(node.width);
 }
 
-void eval(gateo::v2::view::GateObject& obj) {
-  using gateo::v2::view::GateType;
+void eval(gateo::v3::view::GateObject& obj) {
+  using gateo::v3::view::GateType;
 
   for (Node& node : obj.nodes) {
     switch (node.type) {
