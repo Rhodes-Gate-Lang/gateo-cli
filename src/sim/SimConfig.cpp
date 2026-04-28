@@ -19,7 +19,7 @@ void SimConfig::apply_inputs(std::ostream& warn) {
     throw std::logic_error("apply_inputs: only CLI input source is supported");
   }
 
-  using gateo::v2::view::GateType;
+  using gateo::v3::view::GateType;
 
   // Index every named root Input node so we can look up assignments by name.
   std::unordered_map<std::string, std::uint32_t> root_input_index;
@@ -62,7 +62,7 @@ void SimConfig::apply_inputs(std::ostream& warn) {
     }
 
     auto& node = gate_object.nodes[it->second];
-    node.literal_value = gate_cli::to_word(value, node.width, &warn);
+    node.value = gate_cli::to_word(value, node.width, &warn);
   }
 
   // Ensure every named root input received a value.
@@ -74,14 +74,14 @@ void SimConfig::apply_inputs(std::ostream& warn) {
 }
 
 void SimConfig::print_outputs(std::ostream& out) const {
-  using gateo::v2::view::GateType;
+  using gateo::v3::view::GateType;
 
   for (const auto& node : gate_object.nodes) {
     if (node.type != GateType::Output || node.parent != 0 || !node.name.has_value()) {
       continue;
     }
 
-    const std::uint64_t value = node.literal_value.value_or(0);
+    const std::uint64_t value = node.value.value_or(0);
     const std::string formatted =
         gate_cli::word_to_format(value, output_format, node.width);
     out << *node.name << " [" << node.width << "]: " << formatted << "\n";

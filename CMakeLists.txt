@@ -20,7 +20,7 @@ set(GATEO_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
   gateo-cpp
   GIT_REPOSITORY https://github.com/Rhodes-Gate-Lang/gateo-cpp.git
-  GIT_TAG        v2.0.1
+  GIT_TAG        v3.0.0
 )
 FetchContent_MakeAvailable(gateo-cpp)
 

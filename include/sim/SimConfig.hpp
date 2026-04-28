@@ -10,7 +10,7 @@
 #pragma once
 
 #include "NumberFormatter.hpp"
-#include "gateo/v2/view.hpp"
+#include "gateo/v3/view.hpp"
 
 #include <ostream>
 #include <string>
@@ -36,7 +36,7 @@ struct SimConfig {
   // ── Post-parse state ─────────────────────────────────────────────────────────
 
   /// Loaded design; mutable so eval() and future passes can update node values.
-  gateo::v2::view::GateObject gate_object{};
+  gateo::v3::view::GateObject gate_object{};
 
   // ── Methods called from the CLI11 subcommand callback ────────────────────────
 
