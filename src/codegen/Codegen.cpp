@@ -100,9 +100,7 @@ std::string node_comment(const gateo::v3::view::Node& n) {
     return s;
 }
 
-// `emit_design_c` only lowers the gate kinds the embedded C runtime supports today.
-// v3 adds SPLIT / MERGE / LSL / LSR; reject those (and UNSPECIFIED) up front so we
-// never emit a half-written design file.
+// Reject only truly unsupported node kinds up front so generation fails fast.
 void throw_if_design_uses_unsupported_codegen_ops(
     const gateo::v3::view::GateObject& obj)
 {
@@ -116,12 +114,15 @@ void throw_if_design_uses_unsupported_codegen_ops(
             case GateType::Xor:
             case GateType::Not:
             case GateType::Literal:
+            case GateType::Split:
+            case GateType::Merge:
+            case GateType::Lsl:
+            case GateType::Lsr:
                 break;
             default:
                 throw std::runtime_error(
                     std::string("gate codegen: node kind \"") + gate_type_label(n.type) +
-                    "\" is not lowered yet (v3 bus/shift ops are sim-only for now); "
-                    "use a design with only bitwise gates and literals, or use `gate sim`.");
+                    "\" is not lowered yet.");
         }
     }
 }
@@ -247,7 +248,8 @@ void emit_design_c(
         const std::string var  = "n" + std::to_string(i);
         const std::uint64_t mask = compute_mask(n.width);
 
-        out << "    uint64_t " << var << " = ";
+        std::string prelude;
+        std::string expr;
 
         switch (n.type) {
 
@@ -255,32 +257,34 @@ void emit_design_c(
                 if (n.parent == 0) {
                     // Root input: runtime has already parsed and width-masked
                     // this value; no additional masking is needed.
-                    out << "inputs[" << input_slot.at(i) << "]";
+                    expr = "inputs[" + std::to_string(input_slot.at(i)) + "]";
                 } else {
                     // Instance input port: forwards the value of the driving
                     // net in the parent scope (always at a lower index).
-                    out << "n" << n.inputs.at(0);
+                    expr = "n" + std::to_string(n.inputs.at(0));
                 }
                 break;
             }
 
             case GateType::Literal: {
                 const std::uint64_t val = n.value.value_or(0) & mask;
-                out << hex64(val);
+                expr = hex64(val);
                 break;
             }
 
             case GateType::And: {
                 if (n.inputs.empty()) {
                     // Degenerate: AND identity is all-ones.
-                    out << hex64(mask);
+                    expr = hex64(mask);
                 } else {
-                    out << "(";
+                    std::ostringstream ss;
+                    ss << "(";
                     for (std::size_t j = 0; j < n.inputs.size(); ++j) {
-                        if (j > 0) out << " & ";
-                        out << "n" << n.inputs[j];
+                        if (j > 0) ss << " & ";
+                        ss << "n" << n.inputs[j];
                     }
-                    out << ") & " << hex64(mask);
+                    ss << ") & " << hex64(mask);
+                    expr = ss.str();
                 }
                 break;
             }
@@ -288,14 +292,16 @@ void emit_design_c(
             case GateType::Or: {
                 if (n.inputs.empty()) {
                     // Degenerate: OR identity is zero.
-                    out << "0x0ULL";
+                    expr = "0x0ULL";
                 } else {
-                    out << "(";
+                    std::ostringstream ss;
+                    ss << "(";
                     for (std::size_t j = 0; j < n.inputs.size(); ++j) {
-                        if (j > 0) out << " | ";
-                        out << "n" << n.inputs[j];
+                        if (j > 0) ss << " | ";
+                        ss << "n" << n.inputs[j];
                     }
-                    out << ") & " << hex64(mask);
+                    ss << ") & " << hex64(mask);
+                    expr = ss.str();
                 }
                 break;
             }
@@ -303,14 +309,16 @@ void emit_design_c(
             case GateType::Xor: {
                 if (n.inputs.empty()) {
                     // Degenerate: XOR identity is zero.
-                    out << "0x0ULL";
+                    expr = "0x0ULL";
                 } else {
-                    out << "(";
+                    std::ostringstream ss;
+                    ss << "(";
                     for (std::size_t j = 0; j < n.inputs.size(); ++j) {
-                        if (j > 0) out << " ^ ";
-                        out << "n" << n.inputs[j];
+                        if (j > 0) ss << " ^ ";
+                        ss << "n" << n.inputs[j];
                     }
-                    out << ") & " << hex64(mask);
+                    ss << ") & " << hex64(mask);
+                    expr = ss.str();
                 }
                 break;
             }
@@ -318,21 +326,84 @@ void emit_design_c(
             case GateType::Not: {
                 // The mask is critical here: bitwise NOT on a uint64 sets all
                 // bits above the node's width, so we must mask them back off.
-                out << "(~n" << n.inputs.at(0) << ") & " << hex64(mask);
+                expr = "(~n" + std::to_string(n.inputs.at(0)) + ") & " + hex64(mask);
+                break;
+            }
+
+            case GateType::Split: {
+                const auto src_idx = n.inputs.at(0);
+                const auto src_w = nodes[src_idx].width;
+                const auto split_lo = n.split_lo.value_or(0);
+
+                std::ostringstream ss;
+                ss << "(";
+                bool wrote_any_term = false;
+                for (std::uint32_t b = 0; b < n.width && b < 64; ++b) {
+                    const std::uint32_t src_msb_idx = split_lo + (n.width - 1 - b);
+                    const std::int64_t lsb_in_parent =
+                        static_cast<std::int64_t>(src_w) - 1 -
+                        static_cast<std::int64_t>(src_msb_idx);
+                    if (lsb_in_parent < 0 || lsb_in_parent >= 64) {
+                        continue;
+                    }
+                    if (wrote_any_term) ss << " | ";
+                    ss << "(((n" << src_idx << " >> " << lsb_in_parent
+                       << ") & 0x1ULL) << " << b << ")";
+                    wrote_any_term = true;
+                }
+                if (!wrote_any_term) {
+                    ss << "0x0ULL";
+                }
+                ss << ") & " << hex64(mask);
+                expr = ss.str();
+                break;
+            }
+
+            case GateType::Merge: {
+                const std::string acc = "acc" + std::to_string(i);
+                prelude += "    uint64_t " + acc + " = 0x0ULL;\n";
+                for (const std::uint32_t in_idx : n.inputs) {
+                    const auto w = nodes[in_idx].width;
+                    prelude += "    " + acc + " = ((" + std::to_string(w) +
+                               "u >= 64u) ? 0x0ULL : (" + acc + " << " +
+                               std::to_string(w) + "u)) | (n" +
+                               std::to_string(in_idx) + " & " +
+                               hex64(compute_mask(w)) + ");\n";
+                }
+                expr = acc + " & " + hex64(mask);
+                break;
+            }
+
+            case GateType::Lsl: {
+                expr = "(n" + std::to_string(n.inputs.at(1)) + " < 64u) ? "
+                       "((n" + std::to_string(n.inputs.at(0)) + " << n" +
+                       std::to_string(n.inputs.at(1)) + ") & " + hex64(mask) +
+                       ") : 0x0ULL";
+                break;
+            }
+
+            case GateType::Lsr: {
+                expr = "(n" + std::to_string(n.inputs.at(1)) + " < 64u) ? "
+                       "((n" + std::to_string(n.inputs.at(0)) + " >> n" +
+                       std::to_string(n.inputs.at(1)) + ") & " + hex64(mask) +
+                       ") : 0x0ULL";
                 break;
             }
 
             case GateType::Output: {
                 // Output nodes simply forward their single driver's value.
-                out << "n" << n.inputs.at(0);
+                expr = "n" + std::to_string(n.inputs.at(0));
                 break;
             }
 
             default: {
-                out << "0x0ULL  /* unrecognised GateType */";
+                expr = "0x0ULL  /* unrecognised GateType */";
                 break;
             }
         }
+
+        out << prelude;
+        out << "    uint64_t " << var << " = " << expr;
 
         // Close the declaration with a semicolon and a human-readable comment.
         out << ";  /* " << node_comment(n) << " */\n";
